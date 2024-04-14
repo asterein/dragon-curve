@@ -201,11 +201,18 @@ view model =
     -- , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
     , svg [ width (String.fromInt model.width)
           , height (String.fromInt model.height)
-          , viewBox ("0 0 " ++ (String.fromInt model.width) ++ " " ++ (String.fromInt model.height))
+          , viewBox ( (String.fromInt (model.unit * -1)) -- minX
+                    ++ " "
+                    ++ (String.fromInt (model.unit * -1)) -- minY
+                    ++ " " 
+                    ++ (String.fromInt (model.width + model.unit))  -- width
+                    ++ " " 
+                    ++ (String.fromInt (model.height + model.unit)) -- height
+                    )
           , style "padding" "1rem"
           ] [ polyline  [ fill "none"
                         , stroke "black"
-                        , strokeWidth "2"
+                        , strokeWidth "3"
                         , points (dragonToString model.points)
                         ] [] 
           ]
