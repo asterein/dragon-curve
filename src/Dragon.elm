@@ -227,6 +227,7 @@ colors =  [ "AliceBlue"
 type Msg
   = Render
   | Iterate
+  | Revert
   | Reset
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -238,6 +239,23 @@ update msg model =
       )
     Render ->
       (model, Cmd.none)
+    Revert ->
+      if model.iteration > 0 then
+        let
+            points = List.take ((List.length model.points) // 2 + 1) model.points
+            validatedPoints = validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
+            maxX = getMaximumX validatedPoints
+            minX = getMinimumX validatedPoints
+            maxY = getMaximumY validatedPoints
+            minY = getMinimumY validatedPoints
+            height = maxY + model.unit
+            width = maxX + model.unit
+        in
+          ( (Model validatedPoints height width model.unit maxX minX maxY minY (model.iteration - 1))
+          , Cmd.none
+          )
+      else
+        (model, Cmd.none)
     Iterate ->
       let
           -- declare local variables for use in return
@@ -348,6 +366,7 @@ view model =
     div []
     [ div []
       [ button [ onClick Iterate, style "margin-right" "0.5rem" ] [ text "Iterate" ]
+      , button [ onClick Revert, style "margin-right" "0.5rem" ] [ text "Revert" ]
       , button [ onClick Reset, style "margin-right" "0.5rem" ] [ text "Reset" ]
       , text ("Iteration: " ++ (String.fromInt model.iteration))
       ]
