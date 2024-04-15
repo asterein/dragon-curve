@@ -4,8 +4,8 @@ import Browser
 import Html exposing (Html, div, text, button, input)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (type_, placeholder, value, style)
-import Svg exposing (svg, polyline)
-import Svg.Attributes exposing (fill, stroke, strokeWidth, points, height, width, viewBox)
+import Svg exposing (svg, polyline, g)
+import Svg.Attributes exposing (fill, stroke, strokeWidth, points, height, width, viewBox, transform)
 
 main =
   Browser.element
@@ -199,6 +199,8 @@ view model =
     -- , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
     -- , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
     -- , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
+    , div [] [ text ("points length: " ++ (String.fromInt (List.length model.points))) ]
+    , div [] [ text ("half length: " ++ (String.fromInt ((List.length model.points) // 2 + 1))) ]
     , svg [ width (String.fromInt model.width)
           , height (String.fromInt model.height)
           , viewBox ( (String.fromInt (model.unit * -1)) -- minX
@@ -210,11 +212,14 @@ view model =
                     ++ (String.fromInt (model.height + model.unit)) -- height
                     )
           , style "padding" "1rem"
-          ] [ polyline  [ fill "none"
+          -- ] [ g [ transform "rotate(45,0,0)" ]
+          ] [ g []
+                [ polyline  [ fill "none"
                         , stroke "black"
                         , strokeWidth "3"
                         , points (dragonToString model.points)
                         ] [] 
+                ]
           ]
     ]
 
