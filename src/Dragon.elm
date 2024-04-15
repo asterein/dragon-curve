@@ -4,8 +4,23 @@ import Browser
 import Html exposing (Html, div, text, button, input)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (type_, placeholder, value, style)
-import Svg exposing (svg, polyline, g)
-import Svg.Attributes exposing (fill, stroke, strokeWidth, points, height, width, viewBox, transform)
+import Svg exposing (svg, polyline, g, defs, linearGradient, stop)
+import Svg.Attributes exposing  ( fill
+                                , stroke
+                                , strokeWidth
+                                , points
+                                , height
+                                , width
+                                , viewBox
+                                , transform
+                                , id
+                                , x1
+                                , x2
+                                , y1
+                                , y2
+                                , offset
+                                , stopColor
+                                )
 
 main =
   Browser.element
@@ -214,11 +229,27 @@ view model =
           , style "padding" "1rem"
           -- ] [ g [ transform "rotate(45,0,0)" ]
           ] [ g []
-                [ polyline  [ fill "none"
-                        , stroke "black"
-                        , strokeWidth "3"
-                        , points (dragonToString model.points)
-                        ] [] 
+                [ defs [] [ linearGradient  [ id "rainbow"
+                                            , x1 "0%"
+                                            , x2 "100%"
+                                            , y1 "0%"
+                                            , y2 "0%"
+                                            ] [ stop  [ offset "0%" 
+                                                      , stopColor "yellow"
+                                                      ] []
+                                              , stop  [ offset "50%"
+                                                      , stopColor "green"
+                                                      ] []
+                                              , stop  [ offset "100%"
+                                                      , stopColor "red"
+                                                      ] []
+                                              ]
+                          ]
+                , polyline  [ fill "none"
+                            , stroke "url(#rainbow)"
+                            , strokeWidth "3"
+                            , points (dragonToString model.points)
+                            ] [] 
                 ]
           ]
     ]
