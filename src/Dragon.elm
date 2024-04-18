@@ -3,6 +3,7 @@ module Dragon exposing (..)
 import Browser
 import Random
 import Array
+import Task
 import Html exposing (Html, div, text, button, input)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (type_, placeholder, value, style)
@@ -272,7 +273,7 @@ update msg model =
                     , minY = minY
                     , iteration = (model.iteration - 1)
                     }
-          , Cmd.none
+          , run RollColors
           )
       else
         (model, Cmd.none)
@@ -297,8 +298,12 @@ update msg model =
                   , minY = minY
                   , iteration = (model.iteration + 1)
                   }
-        , Cmd.none
+        , run RollColors
         )
+
+-- TODO: learn more about Cmd msg and how to fire off RollColors without this...
+run : msg -> Cmd msg
+run m = Task.perform (always m) (Task.succeed ())
 
 abs : Int -> Int
 abs i =
@@ -433,7 +438,7 @@ view model =
       , button [ onClick RollColors, style "margin-left" "0.5rem" ] [ text "Roll Color!" ]
       ]
     -- debug stuff
-    , div [] [ text ("selected color: " ++ (getColorByIndex colors model.color)) ]
+    -- , div [] [ text ("selected color: " ++ (getColorByIndex colors model.color)) ]
     -- , div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
     -- , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
     -- , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
@@ -454,24 +459,8 @@ view model =
           , style "padding" "1rem"
           -- ] [ g [ transform "rotate(45,0,0)" ]
           ] [ g []
-                [ defs [] [ linearGradient  [ id "rainbow"
-                                            , x1 "0%"
-                                            , x2 "100%"
-                                            , y1 "0%"
-                                            , y2 "0%"
-                                            ] [ stop  [ offset "0%" 
-                                                      , stopColor "yellow"
-                                                      ] []
-                                              , stop  [ offset "50%"
-                                                      , stopColor "green"
-                                                      ] []
-                                              , stop  [ offset "100%"
-                                                      , stopColor "red"
-                                                      ] []
-                                              ]
-                          ]
-                , polyline  [ fill "none"
-                            , stroke "url(#rainbow)"
+                [ polyline  [ fill "none"
+                            , stroke (getColorByIndex colors model.color)
                             , strokeWidth "3"
                             , points (dragonToString model.points)
                             ] [] 
