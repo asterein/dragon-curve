@@ -1,6 +1,8 @@
 module Dragon exposing (..)
 
 import Browser
+import Random
+import Array
 import Html exposing (Html, div, text, button, input)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (type_, placeholder, value, style)
@@ -42,6 +44,7 @@ type alias Model =
   , maxY : Int
   , minY : Int
   , iteration : Int
+  , color : Int
   }
 
 type alias Point =
@@ -66,7 +69,7 @@ dragonEgg i =
       mnX = 0
       mxY = i
       mnY = 0
-      model = Model [] 0 0 0 0 0 0 0 0
+      model = Model [] 0 0 0 0 0 0 0 0 0
   in
     { model | points = p
             , height = h
@@ -229,6 +232,8 @@ type Msg
   | Iterate
   | Revert
   | Reset
+  | RollColors
+  | SetColor Int
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -237,6 +242,13 @@ update msg model =
       ( dragonEgg 15
       , Cmd.none
       )
+    RollColors ->
+      -- pick a random color by first generating a random index generator
+      (model, Random.generate SetColor (Random.int 0 (List.length colors - 1)))
+    SetColor colorIndex ->
+      -- then pass the index generator to another command which can resolve
+      -- the generator to output int
+      ({ model | color = colorIndex }, Cmd.none)
     Render ->
       (model, Cmd.none)
     Revert ->
@@ -251,7 +263,15 @@ update msg model =
             height = if model.iteration - 1 == 0 then 30 else maxY + model.unit
             width = if model.iteration - 1 == 0 then 30 else maxX + model.unit
         in
-          ( (Model validatedPoints height width model.unit maxX minX maxY minY (model.iteration - 1))
+          ({ model | points = validatedPoints
+                    , height = height
+                    , width = width
+                    , maxX = maxX
+                    , minX = minX
+                    , maxY = maxY
+                    , minY = minY
+                    , iteration = (model.iteration - 1)
+                    }
           , Cmd.none
           )
       else
@@ -268,7 +288,15 @@ update msg model =
           height = maxY + model.unit
           width = maxX + model.unit
       in
-        ( (Model validatedPoints height width model.unit maxX minX maxY minY (model.iteration + 1))
+        ({ model | points = validatedPoints
+                  , height = height
+                  , width = width
+                  , maxX = maxX
+                  , minX = minX
+                  , maxY = maxY
+                  , minY = minY
+                  , iteration = (model.iteration + 1)
+                  }
         , Cmd.none
         )
 
@@ -380,6 +408,30 @@ getMinimumY points =
       0
     Just p ->
       p.y
+{-
+getRandomColor : List String -> String
+getRandomColor colorsList =
+  case Array.get (getRandomColorIndex (List.length colorsList -1)) of
+    Nothing ->
+      "black"
+    Just c ->
+      c
+
+getRandomColorIndex : Int -> Int
+getRandomColorIndex max =
+  Random.generate (Random.int 0 max)
+-}
+
+getColorByIndex : List String -> Int -> String
+getColorByIndex colorsList index =
+  let
+      arrayList = Array.fromList colorsList
+  in
+    case Array.get index arrayList of
+      Nothing ->
+        "black"
+      Just c ->
+        c
 
 -- VIEW
 
@@ -391,8 +443,10 @@ view model =
       , button [ onClick Revert, style "margin-right" "0.5rem" ] [ text "Revert" ]
       , button [ onClick Reset, style "margin-right" "0.5rem" ] [ text "Reset" ]
       , text ("Iteration: " ++ (String.fromInt model.iteration))
+      , button [ onClick RollColors, style "margin-left" "0.5rem" ] [ text "Roll Color!" ]
       ]
     -- debug stuff
+    , div [] [ text ("selected color: " ++ (getColorByIndex colors model.color)) ]
     -- , div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
     -- , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
     -- , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
