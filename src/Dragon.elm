@@ -408,19 +408,6 @@ getMinimumY points =
       0
     Just p ->
       p.y
-{-
-getRandomColor : List String -> String
-getRandomColor colorsList =
-  case Array.get (getRandomColorIndex (List.length colorsList -1)) of
-    Nothing ->
-      "black"
-    Just c ->
-      c
-
-getRandomColorIndex : Int -> Int
-getRandomColorIndex max =
-  Random.generate (Random.int 0 max)
--}
 
 getColorByIndex : List String -> Int -> String
 getColorByIndex colorsList index =
