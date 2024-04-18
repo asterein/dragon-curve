@@ -242,14 +242,14 @@ update msg model =
     Revert ->
       if model.iteration > 0 then
         let
-            points = List.take ((List.length model.points) // 2 + 1) model.points
+            points = revertPoints model.points model.unit
             validatedPoints = validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
-            maxX = getMaximumX validatedPoints
-            minX = getMinimumX validatedPoints
-            maxY = getMaximumY validatedPoints
-            minY = getMinimumY validatedPoints
-            height = maxY + model.unit
-            width = maxX + model.unit
+            maxX = if model.iteration - 1 == 0 then 15 else getMaximumX validatedPoints
+            minX = if model.iteration - 1 == 0 then 0 else getMinimumX validatedPoints
+            maxY = if model.iteration - 1 == 0 then 15 else getMaximumY validatedPoints
+            minY = if model.iteration - 1 == 0 then 0 else getMinimumY validatedPoints
+            height = if model.iteration - 1 == 0 then 30 else maxY + model.unit
+            width = if model.iteration - 1 == 0 then 30 else maxX + model.unit
         in
           ( (Model validatedPoints height width model.unit maxX minX maxY minY (model.iteration - 1))
           , Cmd.none
@@ -279,6 +279,28 @@ abs i =
 validatePoints : List Point -> Int -> Int -> List Point
 validatePoints points tX tY =
   List.map (\p -> transformPoint p tX tY) points
+
+revertPoints : List Point -> Int -> List Point
+revertPoints points unit =
+  {-
+    Method:
+      - Get first half of points list
+      - Transform first point in list to match (unit, unit)
+      - Transform all additional points using same transformation
+  -}
+  let
+      halfPoints = List.take ((List.length points) // 2 + 1) points
+      firstSectionPoint =
+        case List.head halfPoints of
+          Nothing ->
+            Point unit unit
+          Just i ->
+            i
+      transformX = unit - firstSectionPoint.x
+      transformY = unit - firstSectionPoint.y
+  in
+    List.map (\p -> transformPoint p transformX transformY) halfPoints
+
 
 iteratePoints : List Point -> List Point
 iteratePoints points =
@@ -372,12 +394,12 @@ view model =
       ]
     -- debug stuff
     -- , div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
-    -- , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
-    -- , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
-    -- , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
-    -- , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
-    -- , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
-    -- , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
+    , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
+    , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
+    , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
+    , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
+    , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
+    , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
     , div [] [ text ("points length: " ++ (String.fromInt (List.length model.points))) ]
     , div [] [ text ("half length: " ++ (String.fromInt ((List.length model.points) // 2 + 1))) ]
     , svg [ width (String.fromInt model.width)
