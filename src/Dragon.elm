@@ -242,8 +242,8 @@ update msg model =
     Revert ->
       if model.iteration > 0 then
         let
-            points = revertPoints model.points model.unit
-            validatedPoints = validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
+            points = if model.iteration - 1 == 0 then [ Point model.unit model.unit, Point 0 model.unit ] else revertPoints model.points model.unit
+            validatedPoints = if model.iteration - 1 == 0 then points else validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
             maxX = if model.iteration - 1 == 0 then 15 else getMaximumX validatedPoints
             minX = if model.iteration - 1 == 0 then 0 else getMinimumX validatedPoints
             maxY = if model.iteration - 1 == 0 then 15 else getMaximumY validatedPoints
@@ -394,14 +394,12 @@ view model =
       ]
     -- debug stuff
     -- , div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
-    , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
-    , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
-    , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
-    , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
-    , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
-    , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
-    , div [] [ text ("points length: " ++ (String.fromInt (List.length model.points))) ]
-    , div [] [ text ("half length: " ++ (String.fromInt ((List.length model.points) // 2 + 1))) ]
+    -- , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
+    -- , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
+    -- , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
+    -- , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
+    -- , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
+    -- , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
     , svg [ width (String.fromInt model.width)
           , height (String.fromInt model.height)
           , viewBox ( (String.fromInt (model.unit * -1)) -- minX
