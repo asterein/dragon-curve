@@ -77,6 +77,7 @@ dragonEgg i =
       model = Model [] [] 0 0 0 0 0 0 0 0 0
   in
     { model | points = p
+            , scales = [ DragonScale p 0 ]
             , height = h
             , width = w
             , unit = u
@@ -284,14 +285,17 @@ view model =
           , style "padding" "1rem"
           -- ] [ g [ transform "rotate(45,0,0)" ]
           ] [ g []
-                [ polyline  [ fill "none"
-                            , stroke "black"
-                            , strokeWidth "3"
-                            , points (dragonToString model.points)
-                            ] [] 
-                ]
+                (List.map viewDragonScale model.scales)
           ]
     ]
+
+viewDragonScale : DragonScale -> Svg.Svg msg
+viewDragonScale scale =
+  polyline  [ fill "none"
+            , stroke "black"
+            , strokeWidth "3"
+            , points (dragonToString scale.points)
+            ] []
 
 -- transform the points list to a string for use in the svg polyline
 
