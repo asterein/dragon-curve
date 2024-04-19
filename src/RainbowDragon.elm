@@ -5,7 +5,7 @@ import Browser
 import Colors exposing (colors, getColorByIndex, getRandColorIndex)
 import Html exposing (Html, div, text, button, input)
 import Html.Events exposing (onClick, onInput)
-import Html.Attributes exposing (type_, placeholder, value, style)
+import Html.Attributes exposing (type_, placeholder, value, style, class)
 import Random
 import Svg exposing (svg, polyline, g, defs, linearGradient, stop)
 import Svg.Attributes exposing  ( fill
@@ -48,6 +48,7 @@ type alias Model =
   , maxY : Int
   , minY : Int
   , iteration : Int
+  , debug : Bool
   }
 
 type alias Point =
@@ -77,7 +78,7 @@ dragonEgg i =
       mnX = 0
       mxY = i
       mnY = 0
-      model = Model [] [] 0 0 0 0 0 0 0 0
+      model = Model [] [] 0 0 0 0 0 0 0 0 False
   in
     { model | points = p
             , scales = [ DragonScale p 0 ]
@@ -98,10 +99,13 @@ type Msg
   | Iterate
   | Revert
   | Reset
+  | ToggleDebug
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    ToggleDebug ->
+      ({ model | debug = not model.debug }, Cmd.none)
     Reset ->
       ( dragonEgg 15
       , Cmd.none
@@ -143,18 +147,11 @@ update msg model =
       if model.iteration <= 1 then
         (dragonEgg model.unit, Cmd.none)
       else if model.iteration > 1 then
-        let
-            points = revertPoints model.points model.unit
-        in
-          (model, run (Render points (model.iteration - 1)))
+        (model, run (Render (revertPoints model.points model.unit) (model.iteration - 1)))
       else
         (model, Cmd.none)
     Iterate ->
-      let
-          -- declare local variables for use in return
-          points = model.points ++ (iteratePoints model.points)
-      in
-          (model, run (Render points (model.iteration + 1)))
+      (model, run (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)))
 
 
 colorScale : DragonScale -> Int -> DragonScale
@@ -169,7 +166,7 @@ getFirstDragonScale scales unit =
     Just s ->
       s
 
--- TODO: learn more about Cmd msg and how to fire off RollColors without this...
+-- TODO: learn more about Cmd msg and how to fire off chained messages without this...
 run : msg -> Cmd msg
 run m = Task.perform (always m) (Task.succeed ())
 
@@ -294,39 +291,47 @@ getMinimumY points =
 view : Model -> Html Msg
 view model =
     div []
-    [ div []
+    [ div [] [ text ("Iteration: " ++ (String.fromInt model.iteration)) ]
+    , div []
       [ button [ onClick Iterate, style "margin-right" "0.5rem" ] [ text "Iterate" ]
       , button [ onClick Revert, style "margin-right" "0.5rem" ] [ text "Revert" ]
       , button [ onClick Reset, style "margin-right" "0.5rem" ] [ text "Reset" ]
-      , text ("Iteration: " ++ (String.fromInt model.iteration))
+      , button [ onClick ToggleDebug, style "margin-right" "0.5rem" ] [ text (if model.debug == True then "Turn debug off" else "Turn debug on") ]
       ]
-    -- debug stuff
-    -- , div [] [ text ("selected color: " ++ (getColorByIndex colors model.color)) ]
-    -- , div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
-    , div [] [ text ("points length: " ++ String.fromInt (List.length model.points)) ]
-    , div [] [ text ("scales length: " ++ String.fromInt (List.length model.scales)) ]
-    -- , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
-    -- , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
-    -- , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
-    -- , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
-    -- , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
-    -- , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
+    , viewDebug model
     , svg [ width (String.fromInt model.width)
           , height (String.fromInt model.height)
-          , viewBox ( (String.fromInt (model.unit * -1)) -- minX
-                    ++ " "
-                    ++ (String.fromInt (model.unit * -1)) -- minY
-                    ++ " " 
-                    ++ (String.fromInt (model.width + model.unit))  -- width
-                    ++ " " 
-                    ++ (String.fromInt (model.height + model.unit)) -- height
-                    )
+          , viewBox (getViewBoxAttr model)
           , style "padding" "1rem"
           -- ] [ g [ transform "rotate(45,0,0)" ]
           ] [ g []
                 (List.map viewDragonScale model.scales)
           ]
     ]
+
+getViewBoxAttr : Model -> String
+getViewBoxAttr model =
+  ( (String.fromInt (model.unit * -1)) -- minX
+  ++ " " ++ (String.fromInt (model.unit * -1)) -- minY
+  ++ " " ++ (String.fromInt (model.width + model.unit))  -- width
+  ++ " " ++ (String.fromInt (model.height + model.unit)) -- height
+  )
+
+
+viewDebug : Model -> Html Msg
+viewDebug model =
+  if model.debug == False then
+    div [ class "debug" ] []
+  else
+    div [ class "debug" ]
+      [ div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
+      , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
+      , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
+      , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
+      , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
+      , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
+      , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
+      ]
 
 viewDragonScale : DragonScale -> Svg.Svg msg
 viewDragonScale scale =
