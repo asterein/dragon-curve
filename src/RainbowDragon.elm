@@ -1,17 +1,17 @@
 module RainbowDragon exposing (..)
 
-import Browser
-import Colors exposing (colors, getColorByIndex)
-import Random
 import Array
-import Task
+import Browser
+import Colors exposing (colors, getColorByIndex, getRandColorIndex)
 import Html exposing (Html, div, text, button, input)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes exposing (type_, placeholder, value, style)
+import Random
 import Svg exposing (svg, polyline, g, defs, linearGradient, stop)
 import Svg.Attributes exposing  ( fill
                                 , stroke
                                 , strokeWidth
+                                , strokeLinecap
                                 , points
                                 , height
                                 , width
@@ -25,6 +25,8 @@ import Svg.Attributes exposing  ( fill
                                 , offset
                                 , stopColor
                                 )
+import Task
+import Time
 
 main =
   Browser.element
@@ -47,7 +49,6 @@ type alias Model =
   , maxY : Int
   , minY : Int
   , iteration : Int
-  , color : Int
   }
 
 type alias Point =
@@ -63,6 +64,9 @@ type alias DragonScale =
 init : () -> (Model, Cmd Msg)
 init _ = (dragonEgg 15, Cmd.none)
 
+initialDragonScale : Int -> DragonScale
+initialDragonScale i = DragonScale [ Point i i, Point 0 i ] 0
+
 dragonEgg : Int -> Model
 dragonEgg i =
   let
@@ -74,7 +78,7 @@ dragonEgg i =
       mnX = 0
       mxY = i
       mnY = 0
-      model = Model [] [] 0 0 0 0 0 0 0 0 0
+      model = Model [] [] 0 0 0 0 0 0 0 0
   in
     { model | points = p
             , scales = [ DragonScale p 0 ]
@@ -91,6 +95,7 @@ dragonEgg i =
 
 type Msg
   = Render (List Point) Int
+  | ColorGeneration Int
   | Iterate
   | Revert
   | Reset
@@ -111,9 +116,10 @@ update msg model =
             minY = getMinimumY validatedPoints
             height = maxY + model.unit
             width = maxX + model.unit
+            scales = convertPointsToScales validatedPoints []
       in
-          ({ model | points = validatedPoints
-                    , scales = convertPointsToScales validatedPoints []
+          ({ model  | points = validatedPoints
+                    , scales = scales
                     , height = height
                     , width = width
                     , maxX = maxX
@@ -122,7 +128,13 @@ update msg model =
                     , minY = minY
                     , iteration = iteration
                     }
-          , Cmd.none)
+          , Cmd.none
+          )
+    ColorGeneration index ->
+        ( model
+        , Cmd.none
+        -- , Random.generate PostProcessing getRandColorIndex
+        )
     Revert ->
       if model.iteration <= 1 then
         (dragonEgg model.unit, Cmd.none)
@@ -139,6 +151,11 @@ update msg model =
           points = model.points ++ (iteratePoints model.points)
       in
           (model, run (Render points (model.iteration + 1)))
+
+
+colorScale : DragonScale -> Int -> DragonScale
+colorScale scale i =
+  { scale | color = i }
 
 -- TODO: learn more about Cmd msg and how to fire off RollColors without this...
 run : msg -> Cmd msg
@@ -274,6 +291,8 @@ view model =
     -- debug stuff
     -- , div [] [ text ("selected color: " ++ (getColorByIndex colors model.color)) ]
     -- , div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
+    , div [] [ text ("points length: " ++ String.fromInt (List.length model.points)) ]
+    , div [] [ text ("scales length: " ++ String.fromInt (List.length model.scales)) ]
     -- , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
     -- , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
     -- , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
@@ -300,7 +319,9 @@ view model =
 viewDragonScale : DragonScale -> Svg.Svg msg
 viewDragonScale scale =
   polyline  [ fill "none"
-            , stroke "black"
+            , stroke (getColorByIndex colors scale.color)
+            , strokeLinecap "square"
+            -- , strokeLinecap "round"
             , strokeWidth "3"
             , points (dragonToString scale.points)
             ] []

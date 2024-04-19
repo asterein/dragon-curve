@@ -1,6 +1,10 @@
-module Colors exposing(colors, getColorByIndex)
+module Colors exposing(colors, getColorByIndex, getRandColorIndex)
 
 import Array
+import Random
+
+getRandColorIndex : Random.Generator Int
+getRandColorIndex = Random.int 0 (List.length colors - 1)
 
 getColorByIndex : List String -> Int -> String
 getColorByIndex colorsList index =
