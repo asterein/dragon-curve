@@ -1,4 +1,17 @@
-module Colors exposing(colors)
+module Colors exposing(colors, getColorByIndex)
+
+import Array
+
+getColorByIndex : List String -> Int -> String
+getColorByIndex colorsList index =
+  let
+      arrayList = Array.fromList colorsList
+  in
+    case Array.get index arrayList of
+      Nothing ->
+        "black"
+      Just c ->
+        c
 
 -- list of html color names
 colors : List String

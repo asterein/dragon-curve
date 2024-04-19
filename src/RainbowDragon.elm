@@ -1,4 +1,4 @@
-module Dragon exposing (..)
+module RainbowDragon exposing (..)
 
 import Browser
 import Colors exposing (colors, getColorByIndex)
@@ -38,6 +38,7 @@ main =
 
 type alias Model =
   { points : List Point
+  , scales : List DragonScale
   , height : Int
   , width : Int
   , unit : Int
@@ -60,10 +61,7 @@ type alias DragonScale =
   }
 
 init : () -> (Model, Cmd Msg)
-init _ =
-    ( dragonEgg 15
-    , Cmd.none
-    )
+init _ = (dragonEgg 15, Cmd.none)
 
 dragonEgg : Int -> Model
 dragonEgg i =
@@ -76,7 +74,7 @@ dragonEgg i =
       mnX = 0
       mxY = i
       mnY = 0
-      model = Model [] 0 0 0 0 0 0 0 0 0
+      model = Model [] [] 0 0 0 0 0 0 0 0 0
   in
     { model | points = p
             , height = h
@@ -91,12 +89,10 @@ dragonEgg i =
 -- UPDATE
 
 type Msg
-  = Render
+  = Render (List Point) Int
   | Iterate
   | Revert
   | Reset
-  | RollColors
-  | SetColor Int
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
@@ -105,27 +101,16 @@ update msg model =
       ( dragonEgg 15
       , Cmd.none
       )
-    RollColors ->
-      -- pick a random color by first generating a random index generator
-      (model, Random.generate SetColor (Random.int 0 (List.length colors - 1)))
-    SetColor colorIndex ->
-      -- then pass the index generator to another command which can resolve
-      -- the generator to output int
-      ({ model | color = colorIndex }, Cmd.none)
-    Render ->
-      (model, Cmd.none)
-    Revert ->
-      if model.iteration > 0 then
-        let
-            points = if model.iteration - 1 == 0 then [ Point model.unit model.unit, Point 0 model.unit ] else revertPoints model.points model.unit
-            validatedPoints = if model.iteration - 1 == 0 then points else validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
-            maxX = if model.iteration - 1 == 0 then 15 else getMaximumX validatedPoints
-            minX = if model.iteration - 1 == 0 then 0 else getMinimumX validatedPoints
-            maxY = if model.iteration - 1 == 0 then 15 else getMaximumY validatedPoints
-            minY = if model.iteration - 1 == 0 then 0 else getMinimumY validatedPoints
-            height = if model.iteration - 1 == 0 then 30 else maxY + model.unit
-            width = if model.iteration - 1 == 0 then 30 else maxX + model.unit
-        in
+    Render points iteration ->
+      let
+            validatedPoints = validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
+            maxX = getMaximumX validatedPoints
+            minX = getMinimumX validatedPoints
+            maxY = getMaximumY validatedPoints
+            minY = getMinimumY validatedPoints
+            height = maxY + model.unit
+            width = maxX + model.unit
+      in
           ({ model | points = validatedPoints
                     , height = height
                     , width = width
@@ -133,35 +118,25 @@ update msg model =
                     , minX = minX
                     , maxY = maxY
                     , minY = minY
-                    , iteration = (model.iteration - 1)
+                    , iteration = iteration
                     }
-          , run RollColors
-          )
+          , Cmd.none)
+    Revert ->
+      if model.iteration <= 1 then
+        (dragonEgg model.unit, Cmd.none)
+      else if model.iteration > 1 then
+        let
+            points = revertPoints model.points model.unit
+        in
+          (model, run (Render points (model.iteration - 1)))
       else
         (model, Cmd.none)
     Iterate ->
       let
           -- declare local variables for use in return
           points = model.points ++ (iteratePoints model.points)
-          validatedPoints = validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
-          maxX = getMaximumX validatedPoints
-          minX = getMinimumX validatedPoints
-          maxY = getMaximumY validatedPoints
-          minY = getMinimumY validatedPoints
-          height = maxY + model.unit
-          width = maxX + model.unit
       in
-        ({ model | points = validatedPoints
-                  , height = height
-                  , width = width
-                  , maxX = maxX
-                  , minX = minX
-                  , maxY = maxY
-                  , minY = minY
-                  , iteration = (model.iteration + 1)
-                  }
-        , run RollColors
-        )
+          (model, run (Render points (model.iteration + 1)))
 
 -- TODO: learn more about Cmd msg and how to fire off RollColors without this...
 run : msg -> Cmd msg
@@ -286,7 +261,6 @@ view model =
       , button [ onClick Revert, style "margin-right" "0.5rem" ] [ text "Revert" ]
       , button [ onClick Reset, style "margin-right" "0.5rem" ] [ text "Reset" ]
       , text ("Iteration: " ++ (String.fromInt model.iteration))
-      , button [ onClick RollColors, style "margin-left" "0.5rem" ] [ text "Roll Color!" ]
       ]
     -- debug stuff
     -- , div [] [ text ("selected color: " ++ (getColorByIndex colors model.color)) ]
@@ -311,7 +285,7 @@ view model =
           -- ] [ g [ transform "rotate(45,0,0)" ]
           ] [ g []
                 [ polyline  [ fill "none"
-                            , stroke (getColorByIndex colors model.color)
+                            , stroke "black"
                             , strokeWidth "3"
                             , points (dragonToString model.points)
                             ] [] 
