@@ -113,6 +113,7 @@ update msg model =
             width = maxX + model.unit
       in
           ({ model | points = validatedPoints
+                    , scales = convertPointsToScales validatedPoints []
                     , height = height
                     , width = width
                     , maxX = maxX
@@ -146,6 +147,13 @@ run m = Task.perform (always m) (Task.succeed ())
 abs : Int -> Int
 abs i =
   if i < 0 then (i * -1) else i
+
+convertPointsToScales : List Point -> List DragonScale -> List DragonScale
+convertPointsToScales points scales =
+  if List.isEmpty points then
+      scales
+  else
+      convertPointsToScales (List.drop 1 points) (scales ++ [ DragonScale (List.take 2 points) 0 ])
 
 validatePoints : List Point -> Int -> Int -> List Point
 validatePoints points tX tY =
