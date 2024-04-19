@@ -26,7 +26,6 @@ import Svg.Attributes exposing  ( fill
                                 , stopColor
                                 )
 import Task
-import Time
 
 main =
   Browser.element
@@ -95,7 +94,7 @@ dragonEgg i =
 
 type Msg
   = Render (List Point) Int
-  | ColorGeneration Int
+  | ColorGeneration (List DragonScale) Int
   | Iterate
   | Revert
   | Reset
@@ -119,7 +118,7 @@ update msg model =
             scales = convertPointsToScales validatedPoints []
       in
           ({ model  | points = validatedPoints
-                    , scales = scales
+                    , scales = []
                     , height = height
                     , width = width
                     , maxX = maxX
@@ -128,13 +127,18 @@ update msg model =
                     , minY = minY
                     , iteration = iteration
                     }
-          , Cmd.none
+          , Random.generate (ColorGeneration scales) getRandColorIndex
           )
-    ColorGeneration index ->
-        ( model
-        , Cmd.none
-        -- , Random.generate PostProcessing getRandColorIndex
-        )
+    ColorGeneration scales index ->
+      if List.isEmpty scales then
+        (model, Cmd.none)
+      else
+        let
+          initScale = getFirstDragonScale scales model.unit
+        in
+          ( { model | scales = model.scales ++ [ DragonScale initScale.points index ] }
+          , Random.generate (ColorGeneration (List.drop 1 scales)) getRandColorIndex
+          )
     Revert ->
       if model.iteration <= 1 then
         (dragonEgg model.unit, Cmd.none)
@@ -156,6 +160,14 @@ update msg model =
 colorScale : DragonScale -> Int -> DragonScale
 colorScale scale i =
   { scale | color = i }
+
+getFirstDragonScale : List DragonScale -> Int -> DragonScale
+getFirstDragonScale scales unit =
+  case Array.get 0 (Array.fromList (List.take 1 scales)) of
+    Nothing ->
+      DragonScale [ Point unit unit, Point 0 unit ] 0
+    Just s ->
+      s
 
 -- TODO: learn more about Cmd msg and how to fire off RollColors without this...
 run : msg -> Cmd msg
