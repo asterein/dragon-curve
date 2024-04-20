@@ -340,7 +340,7 @@ viewDebug model =
       , div [] [ text ("(min, max) y: (" ++ (String.fromInt model.minY) ++ ", " ++ (String.fromInt model.maxY) ++ ")") ]
       , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
       , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
-      , div [] [ text ("points: " ++ (String.fromInt model.width)) ]
+      , div [] [ text "points:" ]
       , div [] [ textarea [ styleDebugPoints ] [ text (dragonToString model.points) ] ]
       ]
 
