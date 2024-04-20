@@ -4,7 +4,7 @@ import Array
 import Browser
 import Colors exposing (colors, getColorByIndex, getRandColorIndex)
 import Html exposing (Html, div, text, button, textarea)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, on)
 import Html.Attributes exposing (type_, placeholder, value, class, attribute)
 import Random
 import Svg exposing (svg, polyline, g, defs, linearGradient, stop)
@@ -49,6 +49,7 @@ type alias Model =
   , minY : Int
   , iteration : Int
   , debug : Bool
+  , isLoading : Bool
   }
 
 type alias Point =
@@ -78,7 +79,7 @@ dragonEgg i =
       mnX = 0
       mxY = i
       mnY = 0
-      model = Model [] [] 0 0 0 0 0 0 0 0 False
+      model = Model [] [] 0 0 0 0 0 0 0 0 False False
   in
     { model | points = p
             , scales = [ DragonScale p 0 ]
@@ -100,10 +101,13 @@ type Msg
   | Revert
   | Reset
   | ToggleDebug
+  | Loaded
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
+    Loaded ->
+      ({ model | isLoading = False }, Cmd.none)
     ToggleDebug ->
       ({ model | debug = not model.debug }, Cmd.none)
     Reset ->
@@ -148,16 +152,17 @@ update msg model =
           )
     Revert ->
       if model.iteration <= 1 then
-        (dragonEgg model.unit, Cmd.none)
+        update Reset model
       else if model.iteration > 1 then
-        (model, run (Render (revertPoints model.points model.unit) (model.iteration - 1)))
+        update (Render (revertPoints model.points model.unit) (model.iteration - 1)) model
       else
         (model, Cmd.none)
     Iterate ->
-      if model.iteration >= 13 then
-        (model, Cmd.none)
+      if model.iteration < 11 then
+        update (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)) model
+        -- ({ model | isLoading = True }, Cmd.none)
       else
-        (model, run (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)))
+        (model, Cmd.none)
 
 
 colorScale : DragonScale -> Int -> DragonScale
@@ -171,10 +176,6 @@ getFirstDragonScale scales unit =
       DragonScale [ Point unit unit, Point 0 unit ] 0
     Just s ->
       s
-
--- TODO: learn more about Cmd msg and how to fire off chained messages without this...
-run : msg -> Cmd msg
-run m = Task.perform (always m) (Task.succeed ())
 
 abs : Int -> Int
 abs i =
@@ -303,15 +304,23 @@ view model =
                                   ]
     , div [ styleControls ] [ button [ onClick Reset, styleBtn ] [ text "reset" ] ]
     , viewDebug model
-    , svg [ width (String.fromInt model.width)
-          , height (String.fromInt model.height)
-          , viewBox (getViewBoxAttr model)
-          , styleSvg
-          -- ] [ g [ transform "rotate(45,0,0)" ]
-          ] [ g []
-                (List.map viewDragonScale model.scales)
-          ]
+    , viewDragon model
     ]
+
+viewDragon : Model -> Html Msg
+viewDragon model =
+  if model.isLoading then
+    div [] [ text "loading" ]
+  else
+    div []  [ svg [ width (String.fromInt model.width)
+            , height (String.fromInt model.height)
+            , viewBox (getViewBoxAttr model)
+            , styleSvg
+            -- ] [ g [ transform "rotate(45,0,0)" ]
+            ] [ g []
+                  (List.map viewDragonScale model.scales)
+              ]
+            ]
 
 iterationCountToString : Int -> String
 iterationCountToString i =
@@ -331,11 +340,12 @@ getViewBoxAttr model =
 
 viewDebug : Model -> Html Msg
 viewDebug model =
-  if model.debug == False then
+  if not model.debug then
     button [ onClick ToggleDebug, styleDebugBtn ] [ text "debug" ]
   else
     div [ styleDebugPanel ]
       [ div [] [ button [ onClick ToggleDebug, styleDebugPanelCloseBtn ] [ text "x" ] ]
+      , div [] [ text ("isLoading: " ++ (if model.isLoading then "1" else "0")) ]
       , div [] [ text ("(min, max) x: (" ++ (String.fromInt model.minX) ++ ", " ++ (String.fromInt model.maxX) ++ ")") ]
       , div [] [ text ("(min, max) y: (" ++ (String.fromInt model.minY) ++ ", " ++ (String.fromInt model.maxY) ++ ")") ]
       , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
