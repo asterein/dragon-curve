@@ -6323,7 +6323,7 @@ var $author$project$RainbowDragon$view = function (model) {
 						_List_fromArray(
 							[
 								$author$project$RainbowDragon$styleBtn,
-								$elm$html$Html$Attributes$href('https://github.com/asterein')
+								$elm$html$Html$Attributes$href('https://github.com/asterein/dragon-curve')
 							]),
 						_List_fromArray(
 							[
