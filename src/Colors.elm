@@ -19,7 +19,8 @@ getColorByIndex colorsList index =
 
 -- list of html color names
 colors : List String
-colors =  [ "AliceBlue"
+colors =  [ "White"
+          , "AliceBlue"
           , "AntiqueWhite"
           , "Aqua"
           , "Aquamarine"
@@ -155,7 +156,7 @@ colors =  [ "AliceBlue"
           , "Turquoise"
           , "Violet"
           , "Wheat"
-          , "White"
+          -- , "White" -- moved white to the top as default colour
           , "WhiteSmoke"
           , "Yellow"
           , "YellowGreen"

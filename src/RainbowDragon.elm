@@ -3,9 +3,9 @@ module RainbowDragon exposing (..)
 import Array
 import Browser
 import Colors exposing (colors, getColorByIndex, getRandColorIndex)
-import Html exposing (Html, div, text, button, input)
+import Html exposing (Html, div, text, button, textarea)
 import Html.Events exposing (onClick, onInput)
-import Html.Attributes exposing (type_, placeholder, value, style, class)
+import Html.Attributes exposing (type_, placeholder, value, class, attribute)
 import Random
 import Svg exposing (svg, polyline, g, defs, linearGradient, stop)
 import Svg.Attributes exposing  ( fill
@@ -107,9 +107,12 @@ update msg model =
     ToggleDebug ->
       ({ model | debug = not model.debug }, Cmd.none)
     Reset ->
-      ( dragonEgg 15
-      , Cmd.none
-      )
+      let
+          resetModel = dragonEgg 15
+      in
+        ( { resetModel | debug = model.debug }
+        , Cmd.none
+        )
     Render points iteration ->
       let
             validatedPoints = validatePoints points (abs (getMinimumX points)) (abs (getMinimumY points))
@@ -151,7 +154,10 @@ update msg model =
       else
         (model, Cmd.none)
     Iterate ->
-      (model, run (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)))
+      if model.iteration >= 13 then
+        (model, Cmd.none)
+      else
+        (model, run (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)))
 
 
 colorScale : DragonScale -> Int -> DragonScale
@@ -290,24 +296,29 @@ getMinimumY points =
 
 view : Model -> Html Msg
 view model =
-    div []
-    [ div [] [ text ("Iteration: " ++ (String.fromInt model.iteration)) ]
-    , div []
-      [ button [ onClick Iterate, style "margin-right" "0.5rem" ] [ text "Iterate" ]
-      , button [ onClick Revert, style "margin-right" "0.5rem" ] [ text "Revert" ]
-      , button [ onClick Reset, style "margin-right" "0.5rem" ] [ text "Reset" ]
-      , button [ onClick ToggleDebug, style "margin-right" "0.5rem" ] [ text (if model.debug == True then "Turn debug off" else "Turn debug on") ]
-      ]
+    div [ styleWrapper ]
+    [ div [ styleIterationCount ] [ button [ onClick Revert, styleBtn ] [ text "«" ]
+                                  , div [] [ text ("Iteration " ++ (iterationCountToString model.iteration)) ]
+                                  , button [ onClick Iterate, styleBtn ] [ text "»" ]
+                                  ]
+    , div [ styleControls ] [ button [ onClick Reset, styleBtn ] [ text "reset" ] ]
     , viewDebug model
     , svg [ width (String.fromInt model.width)
           , height (String.fromInt model.height)
           , viewBox (getViewBoxAttr model)
-          , style "padding" "1rem"
+          , styleSvg
           -- ] [ g [ transform "rotate(45,0,0)" ]
           ] [ g []
                 (List.map viewDragonScale model.scales)
           ]
     ]
+
+iterationCountToString : Int -> String
+iterationCountToString i =
+  if i < 10 then
+    "0" ++ (String.fromInt i)
+  else
+    String.fromInt i
 
 getViewBoxAttr : Model -> String
 getViewBoxAttr model =
@@ -321,16 +332,16 @@ getViewBoxAttr model =
 viewDebug : Model -> Html Msg
 viewDebug model =
   if model.debug == False then
-    div [ class "debug" ] []
+    button [ onClick ToggleDebug, styleDebugBtn ] [ text "debug" ]
   else
-    div [ class "debug" ]
-      [ div [] [ text ("polyline points: " ++ (dragonToString model.points)) ]
-      , div [] [ text ("max x: " ++ (String.fromInt model.maxX)) ]
-      , div [] [ text ("min x: " ++ (String.fromInt model.minX)) ]
-      , div [] [ text ("max y: " ++ (String.fromInt model.maxY)) ]
-      , div [] [ text ("min y: " ++ (String.fromInt model.minY)) ]
+    div [ styleDebugPanel ]
+      [ div [] [ button [ onClick ToggleDebug, styleDebugPanelCloseBtn ] [ text "x" ] ]
+      , div [] [ text ("(min, max) x: (" ++ (String.fromInt model.minX) ++ ", " ++ (String.fromInt model.maxX) ++ ")") ]
+      , div [] [ text ("(min, max) y: (" ++ (String.fromInt model.minY) ++ ", " ++ (String.fromInt model.maxY) ++ ")") ]
       , div [] [ text ("viewbox height: " ++ (String.fromInt model.height)) ]
       , div [] [ text ("viewbox width: " ++ (String.fromInt model.width)) ]
+      , div [] [ text ("points: " ++ (String.fromInt model.width)) ]
+      , div [] [ textarea [ styleDebugPoints ] [ text (dragonToString model.points) ] ]
       ]
 
 viewDragonScale : DragonScale -> Svg.Svg msg
@@ -356,3 +367,111 @@ pointListToStringList points =
 pointToString : Point -> String
 pointToString point =
   (String.fromInt point.x) ++ "," ++ (String.fromInt point.y)
+
+-- STYLES
+
+toStyle : String -> Html.Attribute Msg
+toStyle styling = attribute "style" styling
+
+styleBtn = toStyle """
+  font-family: inherit;
+  font-size: inherit;
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  margin: 0 0.5rem;
+  font-variant: inherit;
+  font-style: inherit;
+  font-weight: inherit;
+"""
+
+styleWrapper = toStyle """
+  margin: 0 auto;
+  padding: 0;
+  font-family: sans-serif;
+  min-width: 100vw;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #111;
+  color: #eee;
+  overflow: hidden;
+"""
+
+styleDebugBtn = toStyle """
+  display: inline-block;
+  position: fixed;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  color: inherit;
+"""
+
+styleDebugPanel = toStyle """
+  display: block;
+  font-family: monospace;
+  font-size: 0.8rem;
+  padding: 1rem;
+  position: fixed;
+  bottom: 0.5rem;
+  right: 0.5rem;
+  background: rgba(50,50,50,0.7);
+  backdrop-filter: blur(2px);
+  border-radius: 0.15rem;
+"""
+
+styleDebugPanelCloseBtn = toStyle """
+  display: grid;
+  height: 20px;
+  width: 20px;
+  color: #fff;
+  border: none;
+  background: maroon;
+  border-radius: 100%;
+  font-weight: bold;
+  cursor: pointer;
+  position: absolute;
+  top: -7px;
+  left: -7px;
+  padding: 0;
+  margin: 0;
+"""
+
+styleDebugPoints = toStyle """
+  display: block;
+  background: transparent;
+  height: 50px;
+  color: inherit;
+  border: 1px solid #eee;
+  resize: none;
+  font-size: inherit;
+"""
+
+styleIterationCount = toStyle """
+  font-size: 2rem;
+  text-align: center;
+  padding: 1.5rem 0 0.25rem 0;
+  margin: 0 auto;
+  font-variant: small-caps;
+  letter-spacing: 0.1em;
+  display: flex;
+  align-content: center;
+  justify-content: center;
+"""
+
+styleControls = toStyle """
+  margin: 0 auto 1rem auto;
+  display: block;
+  max-width: 500px;
+  text-align: center;
+  font-variant: small-caps;
+  font-size: 0.8rem;
+  font-style: italic;
+"""
+
+styleSvg = toStyle """
+  margin: 0 auto;
+  display: block;
+"""
