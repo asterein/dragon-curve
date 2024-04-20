@@ -3,9 +3,9 @@ module RainbowDragon exposing (..)
 import Array
 import Browser
 import Colors exposing (colors, getColorByIndex, getRandColorIndex)
-import Html exposing (Html, div, text, button, textarea)
+import Html exposing (Html, div, text, button, textarea, a)
 import Html.Events exposing (onClick, onInput, on)
-import Html.Attributes exposing (type_, placeholder, value, class, attribute)
+import Html.Attributes exposing (type_, placeholder, value, class, attribute, href)
 import Random
 import Svg exposing (svg, polyline, g, defs, linearGradient, stop)
 import Svg.Attributes exposing  ( fill
@@ -101,13 +101,13 @@ type Msg
   | Revert
   | Reset
   | ToggleDebug
-  | Loaded
+  | ToggleIsLoading
 
 update : Msg -> Model -> (Model, Cmd Msg)
 update msg model =
   case msg of
-    Loaded ->
-      ({ model | isLoading = False }, Cmd.none)
+    ToggleIsLoading ->
+      ({ model | isLoading = not model.isLoading }, Cmd.none)
     ToggleDebug ->
       ({ model | debug = not model.debug }, Cmd.none)
     Reset ->
@@ -159,8 +159,9 @@ update msg model =
         (model, Cmd.none)
     Iterate ->
       if model.iteration < 11 then
-        update (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)) model
         -- ({ model | isLoading = True }, Cmd.none)
+        -- and then....
+        update (Render (model.points ++ (iteratePoints model.points)) (model.iteration + 1)) model
       else
         (model, Cmd.none)
 
@@ -302,7 +303,10 @@ view model =
                                   , div [] [ text ("Iteration " ++ (iterationCountToString model.iteration)) ]
                                   , button [ onClick Iterate, styleBtn ] [ text "»" ]
                                   ]
-    , div [ styleControls ] [ button [ onClick Reset, styleBtn ] [ text "reset" ] ]
+    , div [ styleControls ] [ button [ onClick ToggleDebug, styleBtn ] [ text "log" ]
+                            , button [ onClick Reset, styleBtn ] [ text "reset" ] 
+                            , a [ styleBtn, href "https://github.com/asterein" ] [ text ".git" ]
+                            ]
     , viewDebug model
     , viewDragon model
     ]
@@ -341,7 +345,8 @@ getViewBoxAttr model =
 viewDebug : Model -> Html Msg
 viewDebug model =
   if not model.debug then
-    button [ onClick ToggleDebug, styleDebugBtn ] [ text "debug" ]
+    -- button [ onClick ToggleDebug, styleDebugBtn ] [ text "debug" ]
+    div [] []
   else
     div [ styleDebugPanel ]
       [ div [] [ button [ onClick ToggleDebug, styleDebugPanelCloseBtn ] [ text "x" ] ]
@@ -394,6 +399,7 @@ styleBtn = toStyle """
   font-variant: inherit;
   font-style: inherit;
   font-weight: inherit;
+  text-decoration: inherit;
 """
 
 styleWrapper = toStyle """
@@ -408,25 +414,15 @@ styleWrapper = toStyle """
   overflow: hidden;
 """
 
-styleDebugBtn = toStyle """
-  display: inline-block;
-  position: fixed;
-  bottom: 0.5rem;
-  right: 0.5rem;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  color: inherit;
-"""
-
 styleDebugPanel = toStyle """
   display: block;
   font-family: monospace;
   font-size: 0.8rem;
   padding: 1rem;
   position: fixed;
-  bottom: 0.5rem;
-  right: 0.5rem;
+  top: 20vh;
+  left: 40vw;
+  width: 20vw;
   background: rgba(50,50,50,0.7);
   backdrop-filter: blur(2px);
   border-radius: 0.15rem;
@@ -444,7 +440,7 @@ styleDebugPanelCloseBtn = toStyle """
   cursor: pointer;
   position: absolute;
   top: -7px;
-  left: -7px;
+  right: -7px;
   padding: 0;
   margin: 0;
 """
