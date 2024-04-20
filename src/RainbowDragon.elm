@@ -305,7 +305,7 @@ view model =
                                   ]
     , div [ styleControls ] [ button [ onClick ToggleDebug, styleBtn ] [ text "log" ]
                             , button [ onClick Reset, styleBtn ] [ text "reset" ] 
-                            , a [ styleBtn, href "https://github.com/asterein" ] [ text ".git" ]
+                            , a [ styleBtn, href "https://github.com/asterein/dragon-curve" ] [ text ".git" ]
                             ]
     , viewDebug model
     , viewDragon model
